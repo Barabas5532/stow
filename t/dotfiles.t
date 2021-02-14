@@ -24,7 +24,7 @@ use warnings;
 
 use testutil;
 
-use Test::More tests => 9;
+use Test::More tests => 15;
 use English qw(-no_match_vars);
 
 use testutil;
@@ -178,4 +178,81 @@ is(
     readlink('.config/emacs/init.el'),
     '../../../stow/emacs/dot-config/emacs/init.el',
     => 'processed dotfile folder without folding'
+);
+
+#
+# adopt a file in dot folder
+#
+
+$stow = new_Stow(dir => '../stow', dotfiles => 1, 'adopt' => 1);
+
+make_path('../stow/vim/dot-vim');
+make_file('../stow/vim/dot-vim/vimrc');
+
+make_path('.vim/');
+make_file('.vim/vimrc', "vim config1\n");
+
+$stow->plan_stow('vim');
+$stow->process_tasks();
+is(
+    readlink('.vim/vimrc'),
+    '../../stow/vim/dot-vim/vimrc',
+    => 'adopt file in dot folder symlink'
+);
+
+is(
+    cat_file('.vim/vimrc'),
+    "vim config1\n"
+    => "adopt file in dot folder has right contents"
+);
+
+#
+# adopt a dot file
+#
+
+$stow = new_Stow(dir => '../stow', dotfiles => 1, 'adopt' => 1);
+
+make_path('../stow/vim');
+make_file('../stow/vim/dot-vimrc');
+
+make_file('.vimrc', "vim config2\n");
+
+$stow->plan_stow('vim');
+$stow->process_tasks();
+is(
+    readlink('.vimrc'),
+    '../stow/vim/dot-vimrc',
+    => 'adopt dot file symlink'
+);
+
+is(
+    cat_file('.vimrc'),
+    "vim config2\n"
+    => "adopt dot file has right contents"
+);
+
+#
+# adopt a dot file in dot folder
+#
+
+$stow = new_Stow(dir => '../stow', dotfiles => 1, 'adopt' => 1);
+
+make_path('../stow/vim/dot-vim');
+make_file('../stow/vim/dot-vim/dot-vimrc');
+
+make_path('.vim/');
+make_file('.vim/.vimrc', "vim config3\n");
+
+$stow->plan_stow('vim');
+$stow->process_tasks();
+is(
+    readlink('.vim/.vimrc'),
+    '../../stow/vim/dot-vim/dot-vimrc',
+    => 'adopt dot file in dot folder symlink'
+);
+
+is(
+    cat_file('.vim/.vimrc'),
+    "vim config3\n"
+    => "adopt dot file in dot folder has right contents"
 );
